@@ -82,10 +82,10 @@ func (r *router) HEAD(relativePath string, handlers ...HandlerFunc) {
 }
 
 func wrapHandlers(handlers ...HandlerFunc) []gin.HandlerFunc {
-	funcs := make([]gin.HandlerFunc, len(handlers))
+	functions := make([]gin.HandlerFunc, len(handlers))
 	for i, handler := range handlers {
 		handler := handler
-		funcs[i] = func(c *gin.Context) {
+		functions[i] = func(c *gin.Context) {
 			ctx := NewContext(c)
 			defer ReleaseContext(ctx)
 
@@ -93,7 +93,7 @@ func wrapHandlers(handlers ...HandlerFunc) []gin.HandlerFunc {
 		}
 	}
 
-	return funcs
+	return functions
 }
 
 var contextPool = &sync.Pool{

@@ -14,7 +14,7 @@ func callers() []uintptr {
 	return pcs[:l]
 }
 
-// Error a error with caller stack information
+// Error an error with caller stack information
 type Error interface {
 	error
 	t()
@@ -36,11 +36,11 @@ func (i *item) t() {}
 
 // Format used by go.uber.org/zap in Verbose
 func (i *item) Format(s fmt.State, verb rune) {
-	io.WriteString(s, i.msg)
-	io.WriteString(s, "\n")
+	_, _ = io.WriteString(s, i.msg)
+	_, _ = io.WriteString(s, "\n")
 
 	for _, pc := range i.stack {
-		fmt.Fprintf(s, "%+v\n", errors.Frame(pc))
+		_, _ = fmt.Fprintf(s, "%+v\n", errors.Frame(pc))
 	}
 }
 
@@ -69,8 +69,8 @@ func Wrap(err error, msg string) Error {
 	return e
 }
 
-// Wrapf with some extra message into err
-func Wrapf(err error, format string, args ...interface{}) Error {
+// WrapF with some extra message into err
+func WrapF(err error, format string, args ...interface{}) Error {
 	if err == nil {
 		return nil
 	}

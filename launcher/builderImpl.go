@@ -18,8 +18,6 @@ import (
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"go.uber.org/zap"
 
-	"github.com/renfy96/renfy/code"
-	"github.com/renfy96/renfy/conf"
 	"github.com/renfy96/renfy/core"
 	"github.com/renfy96/renfy/pkg/env"
 	"github.com/renfy96/renfy/pkg/trace"
@@ -56,20 +54,23 @@ func (b builderImpl) Build() (Launcher, error) {
 	return b.launcher, nil
 }
 
-func NewBuilder(logger *zap.Logger, options ...Option) Builder {
+func NewBuilder(options ...Option) Builder {
+	option := new(option)
+	for _, opt := range options {
+		opt(option)
+	}
+	logger := option.logger
+	if logger == nil {
+		panic("日志未定义")
+	}
 	builder := &builderImpl{
 		mux: core.NewMux(),
 		launcher: launcherImpl{
-			name:   conf.ProjectName,
+			name:   option.name,
 			env:    env.Active().Value(),
 			logger: logger,
 			server: nil,
 		},
-	}
-
-	option := new(option)
-	for _, opt := range options {
-		opt(option)
 	}
 	// 配置设置
 	optionSetting(builder, option)
@@ -129,13 +130,13 @@ func NewBuilder(logger *zap.Logger, options ...Option) Builder {
 				logger.Error("got panic", zap.String("panic", fmt.Sprintf("%+v", err)), zap.String("stack", stackInfo))
 				context.AbortWithError(core.Error(
 					http.StatusInternalServerError,
-					code.ServerError,
-					code.Text(code.ServerError)),
+					500,
+					"服务器异常"),
 				)
 
 				if notifyHandler := option.alertNotify; notifyHandler != nil {
 					notifyHandler(&proposal.AlertMessage{
-						ProjectName:  conf.ProjectName,
+						ProjectName:  option.name,
 						Env:          env.Active().Value(),
 						TraceID:      traceId,
 						HOST:         context.Host(),
@@ -159,7 +160,7 @@ func NewBuilder(logger *zap.Logger, options ...Option) Builder {
 					if err.IsAlert() {
 						if notifyHandler := option.alertNotify; notifyHandler != nil {
 							notifyHandler(&proposal.AlertMessage{
-								ProjectName:  conf.ProjectName,
+								ProjectName:  option.name,
 								Env:          env.Active().Value(),
 								TraceID:      traceId,
 								HOST:         context.Host(),
@@ -175,7 +176,10 @@ func NewBuilder(logger *zap.Logger, options ...Option) Builder {
 					multierr.AppendInto(&abortErr, err.StackError())
 					businessCode = err.BusinessCode()
 					businessCodeMsg = err.Message()
-					response = &code.Failure{
+					response = &struct {
+						Code    int
+						Message string
+					}{
 						Code:    businessCode,
 						Message: businessCodeMsg,
 					}
@@ -200,7 +204,7 @@ func NewBuilder(logger *zap.Logger, options ...Option) Builder {
 				}
 
 				option.recordHandler(&proposal.MetricsMessage{
-					ProjectName:  conf.ProjectName,
+					ProjectName:  option.name,
 					Env:          env.Active().Value(),
 					TraceID:      traceId,
 					HOST:         context.Host(),
@@ -332,7 +336,7 @@ func optionSetting(builder *builderImpl, option *option) {
 	}
 	// 开启限流
 	if option.enableRate {
-		limiter := rate.NewLimiter(rate.Every(time.Second*1), conf.MaxRequestsPerSecond)
+		limiter := rate.NewLimiter(rate.Every(time.Second*1), option.maxRequestsPerSecond)
 		builder.mux.Engine().Use(func(ctx *gin.Context) {
 			context := core.NewContext(ctx)
 			defer core.ReleaseContext(context)
@@ -340,8 +344,8 @@ func optionSetting(builder *builderImpl, option *option) {
 			if !limiter.Allow() {
 				context.AbortWithError(core.Error(
 					http.StatusTooManyRequests,
-					code.TooManyRequests,
-					code.Text(code.TooManyRequests)),
+					http.StatusTooManyRequests,
+					"请求太过频繁"),
 				)
 				return
 			}

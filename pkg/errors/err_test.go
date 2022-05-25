@@ -18,7 +18,7 @@ func TestErr(t *testing.T) {
 	err = Wrap(err, "ping timeout err")
 	logger.Info("wrap", zap.Error(err))
 
-	err = Wrapf(err, "ip: %s port: %d", "localhost", 80)
+	err = WrapF(err, "ip: %s port: %d", "localhost", 80)
 	logger.Info("wrapf", zap.Error(err))
 
 	err = WithStack(err)
@@ -26,7 +26,7 @@ func TestErr(t *testing.T) {
 
 	logger.Info("wrap std", zap.Error(Wrap(errors.New("std err"), "some err occurs")))
 
-	logger.Info("wrapf std", zap.Error(Wrapf(errors.New("std err"), "ip: %s port: %d", "localhost", 80)))
+	logger.Info("wrapf std", zap.Error(WrapF(errors.New("std err"), "ip: %s port: %d", "localhost", 80)))
 
 	logger.Info("withstack std", zap.Error(WithStack(errors.New("std err"))))
 
