@@ -25,6 +25,7 @@ type option struct {
 	recordHandler proposal.RecordHandler
 
 	name   string
+	port   string
 	logger *zap.Logger
 }
 
@@ -73,5 +74,11 @@ func WithLogger(logger *zap.Logger) Option {
 func WithMaxRequestsPerSecond(max int) Option {
 	return func(o *option) {
 		o.maxRequestsPerSecond = max
+	}
+}
+
+func WithPort(port string) Option {
+	return func(o *option) {
+		o.port = port
 	}
 }

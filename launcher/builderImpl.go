@@ -63,13 +63,17 @@ func NewBuilder(options ...Option) Builder {
 	if logger == nil {
 		panic("日志未定义")
 	}
+	mux := core.NewMux()
 	builder := &builderImpl{
-		mux: core.NewMux(),
+		mux: mux,
 		launcher: launcherImpl{
 			name:   option.name,
 			env:    env.Active().Value(),
 			logger: logger,
-			server: nil,
+			server: &http.Server{
+				Addr:    ":9999",
+				Handler: mux,
+			},
 		},
 	}
 	// 配置设置
