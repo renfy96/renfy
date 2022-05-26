@@ -14,7 +14,7 @@ type Hook interface {
 	WithSignals(signals ...syscall.Signal) Hook
 
 	// Close register shutdown handles
-	Close(funcs ...func())
+	Close(functions ...func())
 }
 
 type hook struct {
@@ -38,13 +38,13 @@ func (h *hook) WithSignals(signals ...syscall.Signal) Hook {
 	return h
 }
 
-func (h *hook) Close(funcs ...func()) {
+func (h *hook) Close(functions ...func()) {
 	select {
 	case <-h.ctx:
 	}
 	signal.Stop(h.ctx)
 
-	for _, f := range funcs {
+	for _, f := range functions {
 		f()
 	}
 }
