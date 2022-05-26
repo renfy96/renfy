@@ -2,11 +2,11 @@ package launcher
 
 import (
 	"context"
+	"github.com/renfy96/renfy/pkg/shutdown"
+	"go.uber.org/zap"
 	"net/http"
 	"sync"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/renfy96/renfy/runtime"
 )
@@ -39,10 +39,17 @@ func (l launcherImpl) Run() {
 
 func (l launcherImpl) Stop() {
 	l.stopOnce.Do(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		defer cancel()
-		err := l.server.Shutdown(ctx)
-		runtime.Must(err)
+		// 优雅关闭
+		shutdown.NewHook().Close(
+			// 关闭服务
+			func() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				defer cancel()
+				err := l.server.Shutdown(ctx)
+				runtime.Must(err)
+			},
+		)
+
 	})
 }
 
